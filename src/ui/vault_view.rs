@@ -9,7 +9,7 @@ use seepass::vault::{Entry, Vault};
 use zeroize::Zeroizing;
 
 use super::dialogs::{self, Dialog};
-use super::widgets::{self, ACCENT, DANGER, WARNING};
+use super::widgets::{self, DANGER, WARNING};
 use super::{Next, Shared};
 
 /// Passwords older than this get a gentle "consider changing" note.
@@ -151,7 +151,8 @@ pub fn show(ctx: &egui::Context, u: &mut Unlocked, shared: &mut Shared) -> Optio
 
     egui::TopBottomPanel::top("toolbar").frame(toolbar_frame(ctx)).show(ctx, |ui| {
         ui.horizontal(|ui| {
-            ui.label(RichText::new("🛡 SeePass").heading().strong().color(ACCENT));
+            widgets::logo(ui, &shared.logo, 26.0);
+            ui.label(RichText::new("SeePass").size(18.0).strong());
             ui.add_space(16.0);
             let search = ui.add(
                 egui::TextEdit::singleline(&mut u.search)
@@ -179,8 +180,7 @@ pub fn show(ctx: &egui::Context, u: &mut Unlocked, shared: &mut Shared) -> Optio
                 if ui.selectable_label(u.generator.open, "🎲 Generator").clicked() {
                     u.generator.open = !u.generator.open;
                 }
-                let new = egui::Button::new(RichText::new("➕ New").color(egui::Color32::WHITE)).fill(ACCENT);
-                if ui.add(new).on_hover_text("Add an entry (Ctrl+N)").clicked() {
+                if ui.add(widgets::primary_button("➕ New")).on_hover_text("Add an entry (Ctrl+N)").clicked() {
                     u.request(Nav::New);
                 }
             });
@@ -199,7 +199,7 @@ pub fn show(ctx: &egui::Context, u: &mut Unlocked, shared: &mut Shared) -> Optio
         } else if let Some(id) = u.selected.clone() {
             egui::ScrollArea::vertical().auto_shrink(false).show(ui, |ui| details(ui, u, shared, &id));
         } else {
-            empty_state(ui, u);
+            empty_state(ui, u, &shared.logo);
         }
     });
 
@@ -217,7 +217,7 @@ pub fn show(ctx: &egui::Context, u: &mut Unlocked, shared: &mut Shared) -> Optio
 }
 
 fn toolbar_frame(ctx: &egui::Context) -> egui::Frame {
-    egui::Frame::side_top_panel(&ctx.style()).inner_margin(egui::Margin::symmetric(12, 8))
+    egui::Frame::side_top_panel(&ctx.style()).inner_margin(egui::Margin::symmetric(14, 10))
 }
 
 /// Arrow keys move through the list; Ctrl+C / Ctrl+B copy; E edits; Delete deletes.
@@ -338,18 +338,17 @@ fn section(ui: &mut egui::Ui, text: &str) {
     ui.label(RichText::new(text).small().strong().weak());
 }
 
-fn empty_state(ui: &mut egui::Ui, u: &mut Unlocked) {
+fn empty_state(ui: &mut egui::Ui, u: &mut Unlocked, logo: &Option<egui::TextureHandle>) {
     let n = u.vault.entries().len();
     ui.vertical_centered(|ui| {
-        ui.add_space((ui.available_height() * 0.28).max(20.0));
-        ui.label(RichText::new("🛡").size(56.0).color(ACCENT.gamma_multiply(0.7)));
+        ui.add_space((ui.available_height() * 0.24).max(20.0));
+        widgets::logo(ui, logo, 64.0);
+        ui.add_space(4.0);
         if n == 0 {
             ui.heading("Your vault is empty");
             ui.label(RichText::new("Add your first login, or bring your passwords over.").weak());
             ui.add_space(8.0);
-            let add = egui::Button::new(RichText::new("➕ Add your first login").color(egui::Color32::WHITE))
-                .fill(ACCENT)
-                .min_size(egui::vec2(220.0, 34.0));
+            let add = widgets::primary_button("➕ Add your first login").min_size(egui::vec2(220.0, 36.0));
             if ui.add(add).clicked() {
                 u.request(Nav::New);
             }
@@ -668,7 +667,7 @@ fn editor(ui: &mut egui::Ui, u: &mut Unlocked, shared: &mut Shared) {
     widgets::error_label(ui, &ed.error);
     ui.add_space(8.0);
     ui.horizontal(|ui| {
-        let save_btn = egui::Button::new(RichText::new("💾 Save").color(egui::Color32::WHITE)).fill(ACCENT);
+        let save_btn = widgets::primary_button("💾 Save");
         save = ui.add(save_btn).on_hover_text("Ctrl+S").clicked()
             || ui.input_mut(|i| i.consume_key(Modifiers::COMMAND, Key::S));
         cancel = ui.button("Cancel").on_hover_text("Esc").clicked() || ui.input(|i| i.key_pressed(Key::Escape));
@@ -752,7 +751,7 @@ fn legacy_hint(ui: &mut egui::Ui, u: &mut Unlocked) {
         return;
     }
     let Some(dir) = seepass::legacy::find_default() else { return };
-    widgets::banner(ACCENT).show(ui, |ui| {
+    widgets::banner(widgets::ACCENT).show(ui, |ui| {
         ui.set_width(ui.available_width());
         ui.label(RichText::new("SeePass 7 data found").strong());
         ui.label(format!("Your old vault in {} can be imported into this one.", dir.display()));

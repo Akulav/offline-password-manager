@@ -1,14 +1,24 @@
-<p align="center"><img src="assets/shield.png" width="96" alt="SeePass shield"></p>
+<p align="center"><img src="assets/seepass-256.png" width="112" alt="SeePass logo: an eye with a keyhole"></p>
 
 <h1 align="center">SeePass</h1>
 
 <p align="center">
-An offline password manager: one portable executable, one encrypted file, no cloud, no telemetry.
+<b>Your passwords, on your disk, under your key.</b><br>
+One portable executable, one encrypted file. No cloud, no accounts, no telemetry.
 </p>
 
 <p align="center">
-<a href="https://github.com/Akulav/OfflinePasswordManager/actions/workflows/ci.yml"><img src="https://github.com/Akulav/OfflinePasswordManager/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
-<a href="https://github.com/Akulav/OfflinePasswordManager/releases/latest"><img src="https://img.shields.io/github/v/release/Akulav/OfflinePasswordManager?sort=semver" alt="Latest release"></a>
+<a href="https://github.com/Akulav/offline-password-manager/releases/latest"><img src="https://img.shields.io/github/v/release/Akulav/offline-password-manager?sort=semver&label=download&color=5458f0" alt="Latest release"></a>
+<a href="https://github.com/Akulav/offline-password-manager/actions/workflows/ci.yml"><img src="https://github.com/Akulav/offline-password-manager/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+<img src="https://img.shields.io/badge/platforms-Windows%20%7C%20Linux%20%7C%20macOS-1eb8e6" alt="Windows, Linux, macOS">
+</p>
+
+<p align="center">
+<a href="#install">Install</a> ·
+<a href="#features">Features</a> ·
+<a href="#using-seepass">Usage</a> ·
+<a href="docs/security.md">Security</a> ·
+<a href="CHANGELOG.md">Changelog</a>
 </p>
 
 ---
@@ -25,46 +35,61 @@ See [what changed](CHANGELOG.md#800---2026-11-03).
 
 ## Features
 
-- **Strong, modern crypto.** Argon2id key derivation and XChaCha20-Poly1305
+- 🔐 **Strong, modern crypto.** Argon2id key derivation and XChaCha20-Poly1305
   authenticated encryption. Every byte of the file, header included, is
   tamper-evident. [Details](docs/security.md).
-- **Everything you'd expect.** Add, edit, search, sort and delete entries (title,
+- 🗂️ **Everything you'd expect.** Add, edit, search, sort and delete entries (title,
   username, password, website, notes), with favorites pinned to the top and
   10-second undo for deletes.
-- **Password hygiene.** Warns when a password is reused across entries or hasn't
+- 🩺 **Password hygiene.** Warns when a password is reused across entries or hasn't
   changed in over a year.
-- **Password generator** with character classes, look-alike filtering and an
+- 🎲 **Password generator** with character classes, look-alike filtering and an
   entropy readout, plus a zxcvbn **strength meter** with crack-time estimates.
-- **Safe clipboard.** Copied secrets are wiped after 20 s and kept out of
+- 📋 **Safe clipboard.** Copied secrets are wiped after 20 s and kept out of
   Windows clipboard history and cloud sync.
-- **Auto-lock** after inactivity. Locking wipes the decrypted data and key from memory.
-- **Backups.** Atomic saves, an automatic previous-version `.bak`, and encrypted
+- ⏱️ **Auto-lock** after inactivity. Locking wipes the decrypted data and key from memory.
+- 💾 **Backups.** Atomic saves, an automatic previous-version `.bak`, and encrypted
   backup export/merge with a separate password.
-- **Migrates from SeePass 7.** Imports the old `C:\PasswordManager` folder or its
+- ↪️ **Migrates from SeePass 7.** Imports the old `C:\PasswordManager` folder or its
   `data.zip` export.
-- **Portable.** No installer, no admin rights, no DLLs. Runs on Windows, Linux and macOS.
-- Light and dark themes, full keyboard navigation, and screen-reader labels.
+- 🧳 **Portable.** No installer, no admin rights, no DLLs. Runs on Windows, Linux and macOS.
+- 🌗 Light and dark themes, full keyboard navigation, and screen-reader labels.
 
 ## Install
 
-Download the latest build from the **[Releases page](https://github.com/Akulav/OfflinePasswordManager/releases/latest)**:
+Download the latest build from the **[Releases page](https://github.com/Akulav/offline-password-manager/releases/latest)**:
 
 | Platform | File |
 |---|---|
 | Windows 10/11 (x64) | `seepass-<version>-windows-x64.exe` (or the `.zip`) |
-| Linux (x64, glibc 2.35+) | `seepass-<version>-linux-x64.tar.gz` |
+| Debian / Ubuntu (x64) | `seepass-<version>-linux-x64.deb` |
+| Other Linux (x64, glibc 2.35+) | `seepass-<version>-linux-x64.tar.gz` |
 | macOS (Apple silicon) | `seepass-<version>-macos-arm64.tar.gz` |
+
+On Debian/Ubuntu, install the package so SeePass shows up in your app menu:
+
+```bash
+sudo apt install ./seepass-*-linux-x64.deb
+```
 
 Each release ships a `SHA256SUMS.txt`. Check your download against it:
 
 ```powershell
-Get-FileHash .\seepass-8.0.0-windows-x64.exe
+Get-FileHash .\seepass-8.1.0-windows-x64.exe
+```
+
+```bash
+sha256sum -c SHA256SUMS.txt --ignore-missing
 ```
 
 The binaries are not code-signed yet, so Windows SmartScreen and macOS Gatekeeper
 will warn on first launch. On macOS, right-click the app and choose **Open**.
 
 ## Using SeePass
+
+<p align="center">
+<img src="docs/screenshots/lock.png" width="60%" alt="Unlock screen">
+</p>
 
 1. **First launch:** choose a master password. It cannot be recovered, so
    write it down somewhere safe. SeePass refuses easily guessed passwords.
@@ -143,15 +168,21 @@ SEEPASS_UI_SNAPSHOTS=target/ui cargo test --bin seepass -- --test-threads=1
 `cargo build --no-default-features` leaves out the SeePass 7 importer and its
 bundled SQLite.
 
+## Releases
+
+Bump `version` in `Cargo.toml`, add a matching `CHANGELOG.md` section and push to
+`main`. GitHub Actions builds Windows, Linux (`.deb` + `.tar.gz`) and macOS
+packages and publishes the release automatically. See [docs/releasing.md](docs/releasing.md).
+
 ## Documentation
 
 - [Security design & threat model](docs/security.md): file format, what SeePass does and doesn't protect against
 - [Architecture](docs/architecture.md): code layout and how the pieces fit
-- [Releasing](docs/releasing.md): versioning and how a tag becomes a GitHub release
+- [Releasing](docs/releasing.md): versioning and how a version bump becomes a GitHub release
 - [Migrating from SeePass 7](docs/migrating-from-7.md)
 - [Changelog](CHANGELOG.md)
 
 ## License
 
-See [LICENSE](LICENSE). Shield icon by [Freepik](https://www.flaticon.com/authors/freepik) from
-[Flaticon](https://www.flaticon.com/).
+Source-available under the [Akulav Source-Available License](LICENSE). The SeePass
+name and icon are part of the project.

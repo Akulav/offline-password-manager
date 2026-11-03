@@ -4,9 +4,25 @@ version = "8.1.0"
 edition = "2021"
 description = "SeePass - an offline, single-file, authenticated-encryption password manager"
 license-file = "LICENSE"
-repository = "https://github.com/Akulav/OfflinePasswordManager"
+repository = "https://github.com/Akulav/offline-password-manager"
 readme = "README.md"
 publish = false
+
+# `cargo deb` (used by the release workflow) builds the Linux .deb from this.
+[package.metadata.deb]
+maintainer = "Akulav <https://github.com/Akulav>"
+section = "utils"
+priority = "optional"
+extended-description = "One portable executable, one encrypted file, no cloud, no telemetry."
+# eframe loads these at runtime, so dpkg-shlibdeps cannot see them.
+depends = "$auto, libgl1, libxkbcommon0, libxkbcommon-x11-0"
+assets = [
+    ["target/release/seepass", "usr/bin/", "755"],
+    ["assets/seepass.desktop", "usr/share/applications/", "644"],
+    ["assets/seepass-256.png", "usr/share/icons/hicolor/256x256/apps/seepass.png", "644"],
+    ["assets/seepass-512.png", "usr/share/icons/hicolor/512x512/apps/seepass.png", "644"],
+    ["README.md", "usr/share/doc/seepass/README.md", "644"],
+]
 
 [[bin]]
 name = "seepass"

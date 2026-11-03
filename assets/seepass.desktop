@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=SeePass
+GenericName=Password Manager
+Comment=Offline password manager: one encrypted file, no cloud
+Exec=seepass %f
+Icon=seepass
+Terminal=false
+Categories=Utility;Security;
+Keywords=password;vault;security;offline;
+StartupWMClass=seepass

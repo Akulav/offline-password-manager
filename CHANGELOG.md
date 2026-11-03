@@ -3,7 +3,7 @@
 All notable changes to SeePass are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and SeePass uses
 [Semantic Versioning](https://semver.org/). The release workflow publishes the
-section whose heading matches the pushed tag as that release's notes.
+section whose heading matches the `Cargo.toml` version as that release's notes.
 
 ## [Unreleased]
 
@@ -38,6 +38,19 @@ A UI overhaul. Vaults stay compatible both ways: 8.0 opens 8.1 vaults and ignore
 - The empty vault shows clear first steps (add, import backup, import from SeePass 7).
   A non-empty vault shows a shortcut cheat-sheet.
 - `demo_vault` example now includes a favorite, a reused password and an old password.
+- New app icon and branding (an eye with a keyhole) replacing the third-party shield icon,
+  and a matching indigo/cyan accent color.
+- Redesigned unlock and setup screens: the app icon, a framed card and a filled primary button.
+- The window opens centered and slightly larger (1040x680), and identifies itself as
+  `seepass` so Linux desktops show the right icon.
+
+### Fixed
+- Releases are published automatically: every push to `main` whose `Cargo.toml` version
+  has no GitHub release yet builds and publishes one (bare `8.1.0` tags also work now).
+
+### Added (packaging)
+- Linux `.deb` package with a desktop entry and icon, alongside the `.tar.gz`. The
+  `.tar.gz` now also contains `seepass.desktop` and `seepass.png`.
 
 ## [8.0.0] - 2026-11-03
 
@@ -93,6 +106,6 @@ A complete rewrite in Rust. The 7.x C# code is kept under `legacy/` for referenc
 
 Last C# / WinForms release. See `legacy/`.
 
-[Unreleased]: https://github.com/Akulav/OfflinePasswordManager/compare/v8.1.0...HEAD
-[8.1.0]: https://github.com/Akulav/OfflinePasswordManager/compare/v8.0.0...v8.1.0
-[8.0.0]: https://github.com/Akulav/OfflinePasswordManager/releases/tag/v8.0.0
+[Unreleased]: https://github.com/Akulav/offline-password-manager/compare/v8.1.0...HEAD
+[8.1.0]: https://github.com/Akulav/offline-password-manager/releases/tag/v8.1.0
+[8.0.0]: https://github.com/Akulav/offline-password-manager/blob/main/CHANGELOG.md#800---2026-11-03

@@ -7,7 +7,7 @@ use seepass::vault::Vault;
 use zeroize::Zeroizing;
 
 use super::task::{self, Task};
-use super::widgets::{self, ACCENT};
+use super::widgets;
 use super::{Next, Shared};
 
 #[derive(Default)]
@@ -33,25 +33,49 @@ pub struct LockState {
 }
 
 /// Centered card used by both screens.
-fn card<R>(ctx: &egui::Context, add: impl FnOnce(&mut egui::Ui) -> R) -> R {
+fn card<R>(ctx: &egui::Context, logo: Option<egui::TextureHandle>, add: impl FnOnce(&mut egui::Ui) -> R) -> R {
     egui::CentralPanel::default()
         .show(ctx, |ui| {
-            let width = 380.0_f32.min(ui.available_width());
-            ui.add_space((ui.available_height() * 0.12).max(12.0));
-            ui.vertical_centered(|ui| {
-                ui.label(RichText::new("🛡").size(48.0).color(ACCENT));
-                ui.heading(RichText::new("SeePass").strong());
-                ui.add_space(8.0);
-                ui.allocate_ui(egui::vec2(width, 0.0), |ui| {
-                    ui.vertical(|ui| {
-                        ui.set_width(width);
-                        add(ui)
+            egui::ScrollArea::vertical()
+                .auto_shrink(false)
+                .show(ui, |ui| {
+                    let width = 400.0_f32.min(ui.available_width() - 8.0);
+                    ui.add_space((ui.available_height() * 0.10).max(16.0));
+                    ui.vertical_centered(|ui| {
+                        widgets::logo(ui, &logo, 72.0);
+                        ui.add_space(4.0);
+                        ui.label(RichText::new("SeePass").size(26.0).strong());
+                        ui.label(RichText::new("Offline password manager").weak());
+                    });
+                    ui.add_space(14.0);
+                    // Centre the fixed-width card.
+                    let pad = ((ui.available_width() - width) / 2.0 - ui.spacing().item_spacing.x).max(0.0);
+                    ui.horizontal(|ui| {
+                        ui.add_space(pad);
+                        let v = ui.visuals();
+                        egui::Frame::new()
+                            .fill(v.window_fill)
+                            .stroke(v.window_stroke)
+                            .corner_radius(egui::CornerRadius::same(14))
+                            .shadow(egui::Shadow {
+                                offset: [0, 6],
+                                blur: 20,
+                                spread: 0,
+                                color: egui::Color32::from_black_alpha(if v.dark_mode { 90 } else { 26 }),
+                            })
+                            .inner_margin(egui::Margin::same(22))
+                            .show(ui, |ui| {
+                                ui.vertical(|ui| {
+                                    ui.set_width(width - 44.0);
+                                    add(ui)
+                                })
+                                .inner
+                            })
+                            .inner
                     })
                     .inner
                 })
                 .inner
-            })
-            .inner
         })
         .inner
 }
@@ -69,8 +93,14 @@ pub fn setup(ctx: &egui::Context, s: &mut SetupState, shared: &mut Shared) -> Op
     let busy = s.task.is_some();
     let mut next = None;
 
-    card(ctx, |ui| {
-        ui.label("Create a master password. It is the only way to open your vault - it cannot be recovered or reset.");
+    card(ctx, shared.logo.clone(), |ui| {
+        ui.label(RichText::new("Create your vault").size(18.0).strong());
+        ui.label(
+            RichText::new(
+                "Choose a master password. It is the only way to open your vault - it cannot be recovered or reset.",
+            )
+            .weak(),
+        );
         ui.add_space(4.0);
         widgets::secret_field(ui, &mut s.password, &mut s.show, "Master password");
         widgets::strength_meter(ui, &s.password);
@@ -79,8 +109,11 @@ pub fn setup(ctx: &egui::Context, s: &mut SetupState, shared: &mut Shared) -> Op
         ui.checkbox(&mut s.strong_kdf, "Extra-strong key derivation (slower unlock, 256 MiB)");
         widgets::error_label(ui, &s.error);
 
-        let create =
-            ui.add_enabled(!busy, egui::Button::new("Create vault").min_size(egui::vec2(ui.available_width(), 32.0)));
+        ui.add_space(4.0);
+        let create = ui.add_enabled(
+            !busy,
+            widgets::primary_button("Create vault").min_size(egui::vec2(ui.available_width(), 36.0)),
+        );
         if busy {
             ui.horizontal(|ui| {
                 ui.spinner();
@@ -123,7 +156,7 @@ pub fn setup(ctx: &egui::Context, s: &mut SetupState, shared: &mut Shared) -> Op
                      Settings → Import from SeePass 7.",
                 )
                 .small()
-                .color(ACCENT),
+                .color(widgets::ACCENT),
             );
         }
     });
@@ -157,8 +190,9 @@ pub fn unlock(ctx: &egui::Context, s: &mut LockState, shared: &mut Shared) -> Op
     let busy = s.task.is_some();
     let mut next = None;
 
-    card(ctx, |ui| {
-        ui.label("Enter your master password to unlock.");
+    card(ctx, shared.logo.clone(), |ui| {
+        ui.label(RichText::new("Welcome back").size(18.0).strong());
+        ui.label(RichText::new("Enter your master password to unlock.").weak());
         let resp = widgets::secret_field(ui, &mut s.password, &mut s.show, "Master password");
         if !s.focused {
             resp.request_focus();
@@ -170,8 +204,9 @@ pub fn unlock(ctx: &egui::Context, s: &mut LockState, shared: &mut Shared) -> Op
         } else {
             widgets::error_label(ui, &s.error);
         }
+        ui.add_space(4.0);
         let clicked = ui
-            .add_enabled(!busy, egui::Button::new("Unlock").min_size(egui::vec2(ui.available_width(), 32.0)))
+            .add_enabled(!busy, widgets::primary_button("Unlock").min_size(egui::vec2(ui.available_width(), 36.0)))
             .clicked();
         if busy {
             ui.horizontal(|ui| {

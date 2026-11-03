@@ -29,6 +29,7 @@ pub struct Shared {
     pub settings: Settings,
     pub vault_path: PathBuf,
     pub clipboard: ClipboardGuard,
+    pub logo: Option<egui::TextureHandle>,
     toast: Option<Toast>,
     last_activity: Instant,
 }
@@ -68,6 +69,7 @@ impl App {
             settings,
             vault_path,
             clipboard: ClipboardGuard::new(),
+            logo: widgets::load_logo(ctx),
             toast: None,
             last_activity: Instant::now(),
         };

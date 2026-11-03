@@ -12,16 +12,18 @@ fn main() -> eframe::Result {
     let vault_override = parse_args();
 
     let mut viewport = egui::ViewportBuilder::default()
-        .with_title(format!("SeePass {}", seepass::VERSION))
-        .with_inner_size([980.0, 640.0])
-        .with_min_inner_size([720.0, 480.0]);
-    if let Ok(icon) = eframe::icon_data::from_png_bytes(include_bytes!("../assets/shield.png")) {
+        .with_title("SeePass")
+        // Matches the .desktop file on Linux so the dock/taskbar shows the right icon.
+        .with_app_id("seepass")
+        .with_inner_size([1040.0, 680.0])
+        .with_min_inner_size([760.0, 500.0]);
+    if let Ok(icon) = eframe::icon_data::from_png_bytes(include_bytes!("../assets/seepass-256.png")) {
         viewport = viewport.with_icon(Arc::new(icon));
     }
 
     eframe::run_native(
         "SeePass",
-        eframe::NativeOptions { viewport, ..Default::default() },
+        eframe::NativeOptions { viewport, centered: true, ..Default::default() },
         Box::new(move |cc| Ok(Box::new(ui::App::new(cc, vault_override)))),
     )
 }

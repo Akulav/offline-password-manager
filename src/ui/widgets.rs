@@ -5,7 +5,8 @@ use seepass::strength;
 
 use super::Shared;
 
-pub const ACCENT: Color32 = Color32::from_rgb(110, 92, 240);
+/// Brand colour, taken from the app icon's gradient.
+pub const ACCENT: Color32 = Color32::from_rgb(84, 88, 240);
 pub const DANGER: Color32 = Color32::from_rgb(225, 75, 85);
 pub const WARNING: Color32 = Color32::from_rgb(230, 160, 40);
 pub const SUCCESS: Color32 = Color32::from_rgb(60, 175, 110);
@@ -25,38 +26,71 @@ const AVATAR_COLORS: [Color32; 8] = [
 pub fn apply_style(ctx: &egui::Context, dark: bool) {
     let mut v = if dark { egui::Visuals::dark() } else { egui::Visuals::light() };
     if dark {
-        v.panel_fill = Color32::from_rgb(26, 26, 31);
-        v.window_fill = Color32::from_rgb(32, 32, 38);
-        v.extreme_bg_color = Color32::from_rgb(18, 18, 22);
-        v.faint_bg_color = Color32::from_rgb(34, 34, 41);
+        v.panel_fill = Color32::from_rgb(22, 23, 30);
+        v.window_fill = Color32::from_rgb(30, 31, 40);
+        v.extreme_bg_color = Color32::from_rgb(15, 16, 21);
+        v.faint_bg_color = Color32::from_rgb(33, 35, 46);
+        v.widgets.inactive.weak_bg_fill = Color32::from_rgb(40, 42, 55);
+        v.widgets.inactive.bg_fill = Color32::from_rgb(40, 42, 55);
+        v.widgets.hovered.weak_bg_fill = Color32::from_rgb(52, 55, 72);
+        v.widgets.hovered.bg_fill = Color32::from_rgb(52, 55, 72);
+        v.window_stroke = Stroke::new(1.0_f32, Color32::from_rgb(48, 50, 64));
     } else {
-        v.panel_fill = Color32::from_rgb(246, 246, 250);
+        v.panel_fill = Color32::from_rgb(247, 248, 252);
         v.window_fill = Color32::WHITE;
         v.extreme_bg_color = Color32::WHITE;
-        v.faint_bg_color = Color32::from_rgb(236, 236, 243);
+        v.faint_bg_color = Color32::from_rgb(237, 239, 247);
+        v.widgets.inactive.weak_bg_fill = Color32::from_rgb(232, 234, 243);
+        v.widgets.inactive.bg_fill = Color32::from_rgb(232, 234, 243);
+        v.widgets.hovered.weak_bg_fill = Color32::from_rgb(220, 223, 238);
+        v.widgets.hovered.bg_fill = Color32::from_rgb(220, 223, 238);
+        v.window_stroke = Stroke::new(1.0_f32, Color32::from_rgb(222, 225, 236));
     }
     v.selection.bg_fill = ACCENT;
     v.selection.stroke = Stroke::new(1.0_f32, Color32::WHITE);
-    v.hyperlink_color = if dark { Color32::from_rgb(160, 150, 255) } else { ACCENT };
-    let r = CornerRadius::same(6);
+    v.hyperlink_color = if dark { Color32::from_rgb(150, 160, 255) } else { ACCENT };
+    v.window_shadow = egui::Shadow { offset: [0, 8], blur: 24, spread: 0, color: Color32::from_black_alpha(70) };
+    v.popup_shadow = egui::Shadow { offset: [0, 4], blur: 12, spread: 0, color: Color32::from_black_alpha(50) };
+    let r = CornerRadius::same(7);
     for w in [&mut v.widgets.noninteractive, &mut v.widgets.inactive, &mut v.widgets.hovered, &mut v.widgets.active] {
         w.corner_radius = r;
     }
     v.widgets.open.corner_radius = r;
-    v.window_corner_radius = CornerRadius::same(10);
+    v.window_corner_radius = CornerRadius::same(12);
     v.menu_corner_radius = CornerRadius::same(8);
     ctx.set_visuals(v);
     ctx.style_mut(|s| {
         s.spacing.item_spacing = egui::vec2(8.0, 8.0);
-        s.spacing.button_padding = egui::vec2(10.0, 5.0);
-        s.spacing.interact_size.y = 28.0;
-        s.spacing.window_margin = egui::Margin::same(14);
+        s.spacing.button_padding = egui::vec2(12.0, 6.0);
+        s.spacing.interact_size.y = 30.0;
+        s.spacing.window_margin = egui::Margin::same(16);
         s.text_styles.insert(TextStyle::Body, FontId::proportional(15.0));
         s.text_styles.insert(TextStyle::Button, FontId::proportional(15.0));
         s.text_styles.insert(TextStyle::Heading, FontId::proportional(22.0));
         s.text_styles.insert(TextStyle::Monospace, FontId::monospace(15.0));
         s.text_styles.insert(TextStyle::Small, FontId::proportional(12.5));
     });
+}
+
+/// Upload the app icon once so screens can draw it.
+pub fn load_logo(ctx: &egui::Context) -> Option<egui::TextureHandle> {
+    let icon = eframe::icon_data::from_png_bytes(include_bytes!("../../assets/seepass-256.png")).ok()?;
+    let image = egui::ColorImage::from_rgba_unmultiplied([icon.width as usize, icon.height as usize], &icon.rgba);
+    let options =
+        egui::TextureOptions { mipmap_mode: Some(egui::TextureFilter::Linear), ..egui::TextureOptions::LINEAR };
+    Some(ctx.load_texture("seepass-logo", image, options))
+}
+
+/// The app icon at `size` points, or nothing if it failed to load.
+pub fn logo(ui: &mut egui::Ui, logo: &Option<egui::TextureHandle>, size: f32) {
+    if let Some(tex) = logo {
+        ui.add(egui::Image::new((tex.id(), egui::vec2(size, size))));
+    }
+}
+
+/// Filled accent button for the main action on a screen.
+pub fn primary_button(text: &str) -> egui::Button<'static> {
+    egui::Button::new(RichText::new(text).strong().color(Color32::WHITE)).fill(ACCENT)
 }
 
 /// A rounded panel used for the details "cards" and banners.
