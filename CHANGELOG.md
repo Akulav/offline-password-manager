@@ -7,6 +7,38 @@ section whose heading matches the pushed tag as that release's notes.
 
 ## [Unreleased]
 
+## [8.1.0] - 2026-11-03
+
+A UI overhaul. Vaults stay compatible both ways: 8.0 opens 8.1 vaults and ignores the new fields.
+
+### Added
+- **Favorites.** Star an entry (button or `S`) to pin it to a "Favorites" section at the top.
+- **Reused-password warning** on the entry page and live in the editor.
+- **Password age.** SeePass tracks when each password last changed and suggests
+  rotating ones older than a year.
+- **Undo delete.** A deleted entry can be restored for 10 seconds.
+- **Unsaved-changes guard.** Leaving the editor with edits asks before discarding them.
+- **Sort** the list A–Z or by most recently edited.
+- **Keyboard navigation:** ↑/↓ move through the list, `E`/Enter edits, Ctrl+C copies
+  the password, Ctrl+B copies the username, `Del` deletes.
+- **Status bar countdowns** for auto-lock and clipboard clearing.
+- A "N failed attempts" counter on the lock screen.
+- Headless UI tests (`egui_kittest`) covering setup, unlock, details, editing,
+  discard, generator, delete/undo, settings and lock. They can also render screenshots.
+- Debug builds only: `SEEPASS_DEV_PASSWORD` auto-unlocks, for UI work.
+
+### Changed
+- New look: colored avatar initials, card-style entry pages with strength pills,
+  rounded widgets, and a refined dark and light palette.
+- Entry list rows show title and username with clear selection and hover states.
+  They are also exposed to screen readers.
+- The editor uses a single-column form with labels above the fields and a live avatar preview.
+- The generator puts the password first and colors the entropy readout.
+- The settings window is grouped into sections, scrolls on small screens, and has a Dark/Light toggle.
+- The empty vault shows clear first steps (add, import backup, import from SeePass 7).
+  A non-empty vault shows a shortcut cheat-sheet.
+- `demo_vault` example now includes a favorite, a reused password and an old password.
+
 ## [8.0.0] - 2026-11-03
 
 A complete rewrite in Rust. The 7.x C# code is kept under `legacy/` for reference.
@@ -61,5 +93,6 @@ A complete rewrite in Rust. The 7.x C# code is kept under `legacy/` for referenc
 
 Last C# / WinForms release. See `legacy/`.
 
-[Unreleased]: https://github.com/Akulav/OfflinePasswordManager/compare/v8.0.0...HEAD
+[Unreleased]: https://github.com/Akulav/OfflinePasswordManager/compare/v8.1.0...HEAD
+[8.1.0]: https://github.com/Akulav/OfflinePasswordManager/compare/v8.0.0...v8.1.0
 [8.0.0]: https://github.com/Akulav/OfflinePasswordManager/releases/tag/v8.0.0

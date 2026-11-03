@@ -24,13 +24,21 @@ fn main() -> seepass::Result<()> {
         ("Steam", "gamer_jane", "store.steampowered.com", ""),
         ("Wi-Fi at home", "", "", "Router admin is 192.168.0.1"),
     ];
-    for (title, user, url, notes) in sites {
+    for (i, (title, user, url, notes)) in sites.into_iter().enumerate() {
         let mut e = Entry::new();
         e.title = title.into();
         e.username = user.into();
         e.url = url.into();
         e.notes = notes.into();
         e.password = generate(&GeneratorOptions::default()).unwrap().to_string();
+        match i {
+            0 => e.favorite = true,
+            // Steam and the university portal share a weak password, which shows the reuse warning.
+            2 | 3 => e.password = "Summer2019!".into(),
+            // The Wi-Fi password is two years old, which shows the rotation hint.
+            4 => e.password_changed = e.created.saturating_sub(2 * 365 * 86_400),
+            _ => {}
+        }
         vault.upsert(e)?;
     }
     println!("Created {} with {} entries.", path.display(), vault.entries().len());

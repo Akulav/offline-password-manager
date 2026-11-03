@@ -38,6 +38,11 @@ impl ClipboardGuard {
         }
     }
 
+    /// Time left before the pending clear, for the status bar.
+    pub fn remaining(&self) -> Option<Duration> {
+        self.pending.as_ref()?.clear_at?.checked_duration_since(Instant::now())
+    }
+
     pub fn clear_if_ours(&mut self) {
         let (Some(cb), Some(p)) = (self.inner.as_mut(), self.pending.take()) else { return };
         if cb.get_text().map(|t| digest(&t) == p.digest).unwrap_or(false) {

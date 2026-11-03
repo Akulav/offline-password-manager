@@ -43,6 +43,7 @@ impl Settings {
 /// * Windows: `%APPDATA%\SeePass\`
 /// * macOS: `~/Library/Application Support/SeePass/`
 /// * Linux: `$XDG_DATA_HOME/seepass/` and `$XDG_CONFIG_HOME/seepass/`
+#[derive(Clone, Debug)]
 pub struct AppPaths {
     pub default_vault: PathBuf,
     pub settings: PathBuf,

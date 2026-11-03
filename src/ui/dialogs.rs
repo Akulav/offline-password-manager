@@ -9,7 +9,7 @@ use seepass::{strength, Result};
 use zeroize::Zeroizing;
 
 use super::task::{self, Task};
-use super::vault_view::Unlocked;
+use super::vault_view::{Nav, Unlocked};
 use super::widgets::{self, DANGER};
 use super::{Next, Shared};
 
@@ -18,6 +18,8 @@ pub enum Dialog {
         id: String,
         title: String,
     },
+    /// The editor has unsaved changes and the user tried to leave it.
+    DiscardChanges(Nav),
     ChangePassword(PasswordForm, Option<Task<Result<MasterKey>>>),
     ExportBackup {
         path: PathBuf,
@@ -74,105 +76,149 @@ impl Dialog {
     }
 }
 
+/// Ask for a backup file, then open the import dialog for it.
+pub fn pick_backup_import(u: &mut Unlocked) {
+    if let Some(path) = rfd::FileDialog::new()
+        .set_title("Import SeePass backup")
+        .add_filter("SeePass vault", &["seepass"])
+        .add_filter("All files", &["*"])
+        .pick_file()
+    {
+        u.dialog =
+            Some(Dialog::ImportBackup { path, password: Zeroizing::default(), show: false, error: None, task: None });
+    }
+}
+
+/// Use the 7.x folder if it exists on this PC, otherwise ask for its `data.zip`.
+#[cfg(feature = "legacy-import")]
+pub fn pick_legacy_import(u: &mut Unlocked) {
+    let picked = seepass::legacy::find_default().or_else(|| {
+        rfd::FileDialog::new()
+            .set_title("Select SeePass 7 export (data.zip)")
+            .add_filter("SeePass 7 export", &["zip"])
+            .pick_file()
+    });
+    if let Some(path) = picked {
+        u.dialog = Some(Dialog::import_legacy(path));
+    }
+}
+
+fn section(ui: &mut egui::Ui, title: &str, add: impl FnOnce(&mut egui::Ui)) {
+    ui.label(RichText::new(title).small().strong().weak());
+    widgets::card(ui).show(ui, |ui| {
+        ui.set_width(ui.available_width());
+        add(ui);
+    });
+    ui.add_space(6.0);
+}
+
 pub fn settings_window(ctx: &egui::Context, u: &mut Unlocked, shared: &mut Shared) -> Option<Next> {
     let mut open = u.settings_open;
-    egui::Window::new("⚙ Settings").open(&mut open).resizable(false).default_width(420.0).show(ctx, |ui| {
-        ui.label(RichText::new("Appearance").strong());
-        if ui.checkbox(&mut shared.settings.dark_mode, "Dark mode").changed() {
-            widgets::apply_style(ctx, shared.settings.dark_mode);
-            shared.save_settings();
-        }
+    let max_h = (ctx.screen_rect().height() - 120.0).max(240.0);
+    egui::Window::new("⚙ Settings")
+        .open(&mut open)
+        .resizable(false)
+        .default_width(440.0)
+        .max_height(max_h)
+        .vscroll(true)
+        .anchor(egui::Align2::CENTER_TOP, egui::vec2(0.0, 56.0))
+        .show(ctx, |ui| {
+            section(ui, "APPEARANCE", |ui| {
+                ui.horizontal(|ui| {
+                    ui.label("Theme");
+                    let mut dark = shared.settings.dark_mode;
+                    ui.selectable_value(&mut dark, true, "🌙 Dark");
+                    ui.selectable_value(&mut dark, false, "☀ Light");
+                    if dark != shared.settings.dark_mode {
+                        shared.settings.dark_mode = dark;
+                        widgets::apply_style(ctx, dark);
+                        shared.save_settings();
+                    }
+                });
+            });
 
-        ui.separator();
-        ui.label(RichText::new("Security").strong());
-        let mut lock_min = shared.settings.auto_lock_secs / 60;
-        ui.horizontal(|ui| {
-            ui.label("Auto-lock after");
-            let r = ui.add(egui::DragValue::new(&mut lock_min).range(0..=240).suffix(" min"));
-            ui.label(RichText::new("(0 = never)").small().weak());
-            if r.changed() {
-                shared.settings.auto_lock_secs = lock_min * 60;
-                shared.save_settings();
-            }
-        });
-        ui.horizontal(|ui| {
-            ui.label("Clear clipboard after");
-            let r = ui.add(egui::DragValue::new(&mut shared.settings.clipboard_clear_secs).range(0..=600).suffix(" s"));
-            ui.label(RichText::new("(0 = never)").small().weak());
-            if r.changed() {
-                shared.save_settings();
-            }
-        });
-        let p = u.vault.kdf_params();
-        ui.label(
-            RichText::new(format!("Key derivation: Argon2id, {} MiB, {} passes", p.m_cost_kib / 1024, p.t_cost))
-                .small()
-                .weak(),
-        );
-        if ui.button("Change master password...").clicked() {
-            u.dialog = Some(Dialog::ChangePassword(PasswordForm::default(), None));
-        }
-
-        ui.separator();
-        ui.label(RichText::new("Backup & import").strong());
-        ui.horizontal_wrapped(|ui| {
-            if ui.button("Export encrypted backup...").clicked() {
-                if let Some(path) = rfd::FileDialog::new()
-                    .set_title("Export encrypted backup")
-                    .set_file_name("seepass-backup.seepass")
-                    .add_filter("SeePass vault", &["seepass"])
-                    .save_file()
-                {
-                    u.dialog = Some(Dialog::ExportBackup { path, form: PasswordForm::default(), task: None });
-                }
-            }
-            if ui.button("Import / merge backup...").clicked() {
-                if let Some(path) = rfd::FileDialog::new()
-                    .set_title("Import SeePass backup")
-                    .add_filter("SeePass vault", &["seepass"])
-                    .add_filter("All files", &["*"])
-                    .pick_file()
-                {
-                    u.dialog = Some(Dialog::ImportBackup {
-                        path,
-                        password: Zeroizing::default(),
-                        show: false,
-                        error: None,
-                        task: None,
+            section(ui, "SECURITY", |ui| {
+                let mut lock_min = shared.settings.auto_lock_secs / 60;
+                egui::Grid::new("security").num_columns(2).spacing([12.0, 8.0]).show(ui, |ui| {
+                    ui.label("Auto-lock after");
+                    ui.horizontal(|ui| {
+                        let r = ui.add(egui::DragValue::new(&mut lock_min).range(0..=240).suffix(" min"));
+                        ui.label(RichText::new("0 = never").small().weak());
+                        if r.changed() {
+                            shared.settings.auto_lock_secs = lock_min * 60;
+                            shared.save_settings();
+                        }
                     });
-                }
-            }
-            #[cfg(feature = "legacy-import")]
-            if ui.button("Import from SeePass 7...").clicked() {
-                let start = seepass::legacy::find_default();
-                let picked = match start {
-                    Some(dir) => Some(dir),
-                    None => rfd::FileDialog::new()
-                        .set_title("Select SeePass 7 export (data.zip)")
-                        .add_filter("SeePass 7 export", &["zip"])
-                        .pick_file(),
+                    ui.end_row();
+                    ui.label("Clear clipboard after");
+                    ui.horizontal(|ui| {
+                        let r = ui.add(
+                            egui::DragValue::new(&mut shared.settings.clipboard_clear_secs).range(0..=600).suffix(" s"),
+                        );
+                        ui.label(RichText::new("0 = never").small().weak());
+                        if r.changed() {
+                            shared.save_settings();
+                        }
+                    });
+                    ui.end_row();
+                });
+                let p = u.vault.kdf_params();
+                let mem = if p.m_cost_kib >= 1024 {
+                    format!("{} MiB", p.m_cost_kib / 1024)
+                } else {
+                    format!("{} KiB", p.m_cost_kib)
                 };
-                if let Some(path) = picked {
-                    u.dialog = Some(Dialog::import_legacy(path));
+                let passes = if p.t_cost == 1 { "1 pass".to_string() } else { format!("{} passes", p.t_cost) };
+                ui.label(RichText::new(format!("Key derivation: Argon2id, {mem}, {passes}")).small().weak());
+                if ui.button("🔑 Change master password...").clicked() {
+                    u.dialog = Some(Dialog::ChangePassword(PasswordForm::default(), None));
                 }
-            }
+            });
+
+            section(ui, "BACKUP & IMPORT", |ui| {
+                ui.horizontal_wrapped(|ui| {
+                    if ui.button("⬆ Export encrypted backup...").clicked() {
+                        if let Some(path) = rfd::FileDialog::new()
+                            .set_title("Export encrypted backup")
+                            .set_file_name("seepass-backup.seepass")
+                            .add_filter("SeePass vault", &["seepass"])
+                            .save_file()
+                        {
+                            u.dialog = Some(Dialog::ExportBackup { path, form: PasswordForm::default(), task: None });
+                        }
+                    }
+                    if ui.button("⬇ Import / merge backup...").clicked() {
+                        pick_backup_import(u);
+                    }
+                    #[cfg(feature = "legacy-import")]
+                    if ui.button("⬇ Import from SeePass 7...").clicked() {
+                        pick_legacy_import(u);
+                    }
+                });
+            });
+
+            section(ui, "VAULT FILE", |ui| {
+                ui.add(
+                    egui::Label::new(RichText::new(u.vault.path().display().to_string()).small().monospace()).wrap(),
+                );
+                ui.label(
+                    RichText::new(format!(
+                        "Previous version kept as {}",
+                        vault::backup_path(u.vault.path()).file_name().unwrap_or_default().to_string_lossy()
+                    ))
+                    .small()
+                    .weak(),
+                );
+            });
+
+            ui.label(RichText::new("DANGER ZONE").small().strong().color(DANGER));
+            widgets::banner(DANGER).show(ui, |ui| {
+                ui.set_width(ui.available_width());
+                if ui.button(RichText::new("🗑 Delete this vault...").color(DANGER)).clicked() {
+                    u.dialog = Some(Dialog::DestroyVault { typed: String::new() });
+                }
+            });
         });
-
-        ui.separator();
-        ui.label(RichText::new("Vault file").strong());
-        ui.label(RichText::new(u.vault.path().display().to_string()).small().monospace());
-        ui.label(
-            RichText::new(format!("The previous version is kept as {}", vault::backup_path(u.vault.path()).display()))
-                .small()
-                .weak(),
-        );
-
-        ui.separator();
-        ui.label(RichText::new("Danger zone").strong().color(DANGER));
-        if ui.button(RichText::new("Delete this vault...").color(DANGER)).clicked() {
-            u.dialog = Some(Dialog::DestroyVault { typed: String::new() });
-        }
-    });
     u.settings_open = open;
     None
 }
@@ -181,22 +227,40 @@ pub fn show_dialog(ctx: &egui::Context, u: &mut Unlocked, shared: &mut Shared) -
     let dialog = u.dialog.as_mut()?;
     let mut close = false;
     let mut next = None;
+    let mut after: Option<Nav> = None;
 
     let modal = egui::Modal::new(egui::Id::new("dialog")).show(ctx, |ui| {
         ui.set_width(380.0);
         match dialog {
             Dialog::ConfirmDelete { id, title } => {
                 ui.heading("Delete entry?");
-                ui.label(format!("\"{title}\" will be removed from the vault."));
+                ui.label(format!("\"{title}\" will be removed from the vault. You can undo this for a few seconds."));
                 ui.horizontal(|ui| {
-                    if ui.button(RichText::new("Delete").color(DANGER)).clicked() {
-                        match u.vault.delete(id) {
-                            Ok(_) => shared.toast("Entry deleted"),
+                    let del = ui.button(RichText::new("🗑 Delete").color(DANGER));
+                    if del.clicked() || ui.input(|i| i.key_pressed(egui::Key::Enter)) {
+                        match u.vault.remove(id) {
+                            Ok(Some(entry)) => {
+                                u.undo = Some((entry, std::time::Instant::now()));
+                                after = Some(Nav::Select(None));
+                            }
+                            Ok(None) => {}
                             Err(e) => shared.error(format!("Could not delete: {e}")),
                         }
                         close = true;
                     }
                     close |= ui.button("Cancel").clicked();
+                });
+            }
+
+            Dialog::DiscardChanges(nav) => {
+                ui.heading("Discard changes?");
+                ui.label("This entry has unsaved changes.");
+                ui.horizontal(|ui| {
+                    if ui.button(RichText::new("Discard").color(DANGER)).clicked() {
+                        after = Some(nav.clone());
+                        close = true;
+                    }
+                    close |= ui.button("Keep editing").clicked();
                 });
             }
 
@@ -352,6 +416,9 @@ pub fn show_dialog(ctx: &egui::Context, u: &mut Unlocked, shared: &mut Shared) -
     };
     if close || (modal.should_close() && !busy) {
         u.dialog = None;
+    }
+    if let Some(nav) = after {
+        u.apply(nav);
     }
     next
 }

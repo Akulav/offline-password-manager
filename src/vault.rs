@@ -34,6 +34,12 @@ pub struct Entry {
     /// Unix seconds; used to resolve conflicts when merging backups.
     #[serde(default)]
     pub updated: u64,
+    /// Unix seconds of the last password change (0 in vaults from 8.0 = unknown).
+    #[serde(default)]
+    pub password_changed: u64,
+    /// Pinned to the top of the list.
+    #[serde(default)]
+    pub favorite: bool,
 }
 
 impl Entry {
@@ -43,7 +49,14 @@ impl Entry {
         e.id = new_id();
         e.created = now();
         e.updated = e.created;
+        e.password_changed = e.created;
         e
+    }
+
+    /// When the password was last changed, falling back to creation time.
+    pub fn password_age_secs(&self) -> u64 {
+        let since = if self.password_changed > 0 { self.password_changed } else { self.created };
+        now().saturating_sub(since)
     }
 
     pub fn matches(&self, query: &str) -> bool {
@@ -115,20 +128,66 @@ impl Vault {
         }
         entry.updated = now();
         match self.data.entries.iter_mut().find(|e| e.id == entry.id) {
-            Some(existing) => *existing = entry,
-            None => self.data.entries.push(entry),
+            Some(existing) => {
+                if existing.password != entry.password {
+                    entry.password_changed = entry.updated;
+                }
+                *existing = entry;
+            }
+            None => {
+                if entry.password_changed == 0 {
+                    entry.password_changed = entry.updated;
+                }
+                self.data.entries.push(entry);
+            }
         }
         self.save()
     }
 
-    pub fn delete(&mut self, id: &str) -> Result<bool> {
-        let before = self.data.entries.len();
-        self.data.entries.retain(|e| e.id != id);
-        let removed = self.data.entries.len() != before;
-        if removed {
+    pub fn set_favorite(&mut self, id: &str, favorite: bool) -> Result<()> {
+        if let Some(e) = self.data.entries.iter_mut().find(|e| e.id == id) {
+            if e.favorite != favorite {
+                e.favorite = favorite;
+                e.updated = now();
+                return self.save();
+            }
+        }
+        Ok(())
+    }
+
+    /// How many *other* entries use the same (non-empty) password as `id`.
+    pub fn reuse_count(&self, id: &str) -> usize {
+        self.get(id).map_or(0, |e| self.count_with_password(&e.password, id))
+    }
+
+    /// How many entries other than `exclude_id` use `password` (empty never counts).
+    pub fn count_with_password(&self, password: &str, exclude_id: &str) -> usize {
+        if password.is_empty() {
+            return 0;
+        }
+        self.data.entries.iter().filter(|e| e.id != exclude_id && e.password == password).count()
+    }
+
+    /// Put back an entry removed with [`Vault::delete`] (undo), keeping its
+    /// original timestamps.
+    pub fn restore(&mut self, entry: Entry) -> Result<()> {
+        if self.get(&entry.id).is_none() {
+            self.data.entries.push(entry);
             self.save()?;
         }
-        Ok(removed)
+        Ok(())
+    }
+
+    pub fn delete(&mut self, id: &str) -> Result<bool> {
+        self.remove(id).map(|e| e.is_some())
+    }
+
+    /// Delete an entry and hand it back (for undo).
+    pub fn remove(&mut self, id: &str) -> Result<Option<Entry>> {
+        let Some(pos) = self.data.entries.iter().position(|e| e.id == id) else { return Ok(None) };
+        let entry = self.data.entries.remove(pos);
+        self.save()?;
+        Ok(Some(entry))
     }
 
     /// Re-key the vault with a new master password (and a fresh salt).
@@ -408,6 +467,64 @@ mod tests {
         assert!(e.matches(""));
         assert!(!e.matches("gitlab"));
         assert!(!e.matches("x"), "passwords must not be searchable");
+    }
+
+    #[test]
+    fn password_change_is_tracked() {
+        let dir = tempfile::tempdir().unwrap();
+        let mut v = Vault::create(dir.path().join("v"), "m", P).unwrap();
+        let mut e = entry("a", "1");
+        e.password_changed = 1; // pretend it is ancient
+        v.upsert(e.clone()).unwrap();
+        assert_eq!(v.get(&e.id).unwrap().password_changed, 1, "new entries keep a given timestamp");
+
+        e.notes = "edited".into();
+        v.upsert(e.clone()).unwrap();
+        assert_eq!(v.get(&e.id).unwrap().password_changed, 1, "other edits don't reset the age");
+
+        e.password = "2".into();
+        v.upsert(e.clone()).unwrap();
+        assert!(v.get(&e.id).unwrap().password_changed > 1);
+        assert!(v.get(&e.id).unwrap().password_age_secs() < 60);
+    }
+
+    #[test]
+    fn reuse_count_ignores_self_and_empty() {
+        let dir = tempfile::tempdir().unwrap();
+        let mut v = Vault::create(dir.path().join("v"), "m", P).unwrap();
+        let (a, b, c, d) = (entry("a", "same"), entry("b", "same"), entry("c", "other"), entry("d", ""));
+        let e = entry("e", "");
+        for x in [&a, &b, &c, &d, &e] {
+            v.upsert(x.clone()).unwrap();
+        }
+        assert_eq!(v.reuse_count(&a.id), 1);
+        assert_eq!(v.reuse_count(&c.id), 0);
+        assert_eq!(v.reuse_count(&d.id), 0, "empty passwords are not 'reused'");
+        assert_eq!(v.reuse_count("missing"), 0);
+    }
+
+    #[test]
+    fn favorite_persists_and_remove_restore_roundtrip() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("v");
+        let mut v = Vault::create(&path, "m", P).unwrap();
+        let e = entry("a", "1");
+        v.upsert(e.clone()).unwrap();
+        v.set_favorite(&e.id, true).unwrap();
+        let removed = v.remove(&e.id).unwrap().unwrap();
+        assert!(v.entries().is_empty());
+        v.restore(removed).unwrap();
+        drop(v);
+        let v = Vault::unlock(&path, "m").unwrap();
+        assert!(v.get(&e.id).unwrap().favorite);
+    }
+
+    #[test]
+    fn reads_8_0_entries_without_new_fields() {
+        let json = br#"{"entries":[{"id":"x","title":"t","username":"u","password":"p","url":"","notes":"","created":5,"updated":5}]}"#;
+        let data: VaultData = serde_json::from_slice(json).unwrap();
+        assert!(!data.entries[0].favorite);
+        assert_eq!(data.entries[0].password_changed, 0);
     }
 
     #[test]

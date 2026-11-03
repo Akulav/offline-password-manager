@@ -13,6 +13,11 @@ An offline password manager: one portable executable, one encrypted file, no clo
 
 ---
 
+<p align="center">
+<img src="docs/screenshots/details-dark.png" width="49%" alt="Entry page, dark theme: reused-password warning, strength pill, copy buttons">
+<img src="docs/screenshots/details-light.png" width="49%" alt="Entry page, light theme">
+</p>
+
 SeePass keeps your logins in a single file on your own disk. The file is encrypted
 with a key derived from your master password, and the app never touches the
 network. Version 8 is a ground-up rewrite in Rust of the original C#/WinForms app.
@@ -23,8 +28,11 @@ See [what changed](CHANGELOG.md#800---2026-11-03).
 - **Strong, modern crypto.** Argon2id key derivation and XChaCha20-Poly1305
   authenticated encryption. Every byte of the file, header included, is
   tamper-evident. [Details](docs/security.md).
-- **Everything you'd expect.** Add, edit, search and delete entries (title,
-  username, password, website, notes).
+- **Everything you'd expect.** Add, edit, search, sort and delete entries (title,
+  username, password, website, notes), with favorites pinned to the top and
+  10-second undo for deletes.
+- **Password hygiene.** Warns when a password is reused across entries or hasn't
+  changed in over a year.
 - **Password generator** with character classes, look-alike filtering and an
   entropy readout, plus a zxcvbn **strength meter** with crack-time estimates.
 - **Safe clipboard.** Copied secrets are wiped after 20 s and kept out of
@@ -35,7 +43,7 @@ See [what changed](CHANGELOG.md#800---2026-11-03).
 - **Migrates from SeePass 7.** Imports the old `C:\PasswordManager` folder or its
   `data.zip` export.
 - **Portable.** No installer, no admin rights, no DLLs. Runs on Windows, Linux and macOS.
-- Light and dark themes, plus keyboard shortcuts (Ctrl+N / F / S / L).
+- Light and dark themes, full keyboard navigation, and screen-reader labels.
 
 ## Install
 
@@ -62,7 +70,23 @@ will warn on first launch. On macOS, right-click the app and choose **Open**.
    write it down somewhere safe. SeePass refuses easily guessed passwords.
 2. **Add entries** with **New** (Ctrl+N). The 🎲 button fills in a generated password.
 3. **Copy** a username or password from an entry's page. The clipboard clears itself.
-4. **Lock** (Ctrl+L) when you step away, or let auto-lock do it.
+4. **Lock** (Ctrl+L) when you step away, or let auto-lock do it. The status bar
+   shows how long until it locks.
+
+### Keyboard shortcuts
+
+| Keys | Action | | Keys | Action |
+|---|---|---|---|---|
+| Ctrl+N | New entry | | Ctrl+C | Copy password of selected entry |
+| Ctrl+F | Search (Esc clears) | | Ctrl+B | Copy username |
+| ↑ / ↓ | Move through the list | | S | Toggle favorite |
+| E or Enter | Edit selected entry | | Del | Delete (with undo) |
+| Ctrl+S | Save while editing | | Ctrl+L | Lock |
+
+<p align="center">
+<img src="docs/screenshots/editor.png" width="49%" alt="Editor with strength meter and reuse warning">
+<img src="docs/screenshots/generator.png" width="49%" alt="Password generator">
+</p>
 
 Your vault lives at:
 
@@ -105,7 +129,15 @@ SEEPASS_HOME=./demo cargo run --example demo_vault
 ```
 
 ```bash
-SEEPASS_HOME=./demo cargo run
+SEEPASS_HOME=./demo SEEPASS_DEV_PASSWORD=demo-vault-correct-horse-battery cargo run
+```
+
+(`SEEPASS_DEV_PASSWORD` auto-unlocks **debug builds only**. Release builds don't contain that code.)
+
+To regenerate the screenshots above from the headless UI tests:
+
+```bash
+SEEPASS_UI_SNAPSHOTS=target/ui cargo test --bin seepass -- --test-threads=1
 ```
 
 `cargo build --no-default-features` leaves out the SeePass 7 importer and its

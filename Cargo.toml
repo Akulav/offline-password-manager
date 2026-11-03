@@ -1,6 +1,6 @@
 [package]
 name = "seepass"
-version = "8.0.0"
+version = "8.1.0"
 edition = "2021"
 description = "SeePass - an offline, single-file, authenticated-encryption password manager"
 license-file = "LICENSE"
@@ -53,6 +53,7 @@ rfd = "0.15"
 arboard = "3"
 
 [dev-dependencies]
+egui_kittest = { version = "0.31", features = ["wgpu", "snapshot"] }
 tempfile = "3"
 
 [build-dependencies]

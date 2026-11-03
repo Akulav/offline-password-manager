@@ -27,6 +27,9 @@ pub struct LockState {
     error: Option<String>,
     task: Option<Task<seepass::Result<Vault>>>,
     focused: bool,
+    failures: u32,
+    #[cfg(debug_assertions)]
+    dev_tried: bool,
 }
 
 /// Centered card used by both screens.
@@ -132,6 +135,7 @@ pub fn unlock(ctx: &egui::Context, s: &mut LockState, shared: &mut Shared) -> Op
         match result {
             Ok(vault) => return Some(Next::Unlocked(vault)),
             Err(e) => {
+                s.failures += 1;
                 s.error = Some(e.to_string());
                 s.password.clear();
                 s.focused = false;
@@ -141,6 +145,15 @@ pub fn unlock(ctx: &egui::Context, s: &mut LockState, shared: &mut Shared) -> Op
     if !shared.vault_path.exists() {
         return Some(Next::Setup);
     }
+    // Debug builds only: auto-unlock for UI development (see docs/architecture.md).
+    #[cfg(debug_assertions)]
+    let dev_unlock = !std::mem::replace(&mut s.dev_tried, true)
+        && std::env::var("SEEPASS_DEV_PASSWORD").is_ok_and(|p| {
+            *s.password = p;
+            true
+        });
+    #[cfg(not(debug_assertions))]
+    let dev_unlock = false;
     let busy = s.task.is_some();
     let mut next = None;
 
@@ -151,8 +164,12 @@ pub fn unlock(ctx: &egui::Context, s: &mut LockState, shared: &mut Shared) -> Op
             resp.request_focus();
             s.focused = true;
         }
-        let enter = resp.lost_focus() && ui.input(|i| i.key_pressed(egui::Key::Enter));
-        widgets::error_label(ui, &s.error);
+        let enter = dev_unlock || (resp.lost_focus() && ui.input(|i| i.key_pressed(egui::Key::Enter)));
+        if s.failures > 1 {
+            widgets::error_label(ui, &s.error.as_ref().map(|e| format!("{e} ({} failed attempts)", s.failures)));
+        } else {
+            widgets::error_label(ui, &s.error);
+        }
         let clicked = ui
             .add_enabled(!busy, egui::Button::new("Unlock").min_size(egui::vec2(ui.available_width(), 32.0)))
             .clicked();

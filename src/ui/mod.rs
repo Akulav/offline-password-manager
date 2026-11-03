@@ -4,6 +4,8 @@ mod clipboard;
 mod dialogs;
 mod lock;
 mod task;
+#[cfg(test)]
+mod tests;
 mod vault_view;
 mod widgets;
 
@@ -52,7 +54,11 @@ pub enum Next {
 
 impl App {
     pub fn new(cc: &eframe::CreationContext<'_>, vault_override: Option<PathBuf>) -> Self {
-        let paths = AppPaths::discover();
+        Self::with_paths(&cc.egui_ctx, AppPaths::discover(), vault_override)
+    }
+
+    /// Construct without eframe (used by the UI tests).
+    pub fn with_paths(ctx: &egui::Context, paths: AppPaths, vault_override: Option<PathBuf>) -> Self {
         let settings = Settings::load(&paths.settings);
         let vault_path =
             vault_override.or_else(|| settings.vault_path.clone()).unwrap_or_else(|| paths.default_vault.clone());
@@ -65,40 +71,12 @@ impl App {
             toast: None,
             last_activity: Instant::now(),
         };
-        widgets::apply_style(&cc.egui_ctx, shared.settings.dark_mode);
+        widgets::apply_style(ctx, shared.settings.dark_mode);
         Self { shared, screen }
     }
 
-    fn go(&mut self, next: Next) {
-        self.screen = match next {
-            Next::Setup => Screen::Setup(Default::default()),
-            Next::Locked => Screen::Locked(Default::default()),
-            Next::Unlocked(vault) => {
-                self.shared.last_activity = Instant::now();
-                Screen::Unlocked(Box::new(vault_view::Unlocked::new(vault)))
-            }
-        };
-    }
-
-    fn lock(&mut self, reason: &str) {
-        // Dropping the Unlocked screen drops the Vault, which zeroizes the key
-        // and every entry.
-        self.shared.clipboard.clear_if_ours();
-        self.go(Next::Locked);
-        self.shared.toast(reason);
-    }
-}
-
-fn initial_screen(vault_path: &std::path::Path) -> Screen {
-    if vault_path.exists() {
-        Screen::Locked(Default::default())
-    } else {
-        Screen::Setup(Default::default())
-    }
-}
-
-impl eframe::App for App {
-    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+    /// One frame of the whole app.
+    pub fn frame(&mut self, ctx: &egui::Context) {
         let active = ctx.input(|i| !i.events.is_empty() || i.pointer.is_moving());
         if active {
             self.shared.last_activity = Instant::now();
@@ -131,6 +109,44 @@ impl eframe::App for App {
             None => {}
         }
     }
+
+    #[cfg(test)]
+    pub fn is_unlocked(&self) -> bool {
+        matches!(self.screen, Screen::Unlocked(_))
+    }
+
+    fn go(&mut self, next: Next) {
+        self.screen = match next {
+            Next::Setup => Screen::Setup(Default::default()),
+            Next::Locked => Screen::Locked(Default::default()),
+            Next::Unlocked(vault) => {
+                self.shared.last_activity = Instant::now();
+                Screen::Unlocked(Box::new(vault_view::Unlocked::new(vault)))
+            }
+        };
+    }
+
+    fn lock(&mut self, reason: &str) {
+        // Dropping the Unlocked screen drops the Vault, which zeroizes the key
+        // and every entry.
+        self.shared.clipboard.clear_if_ours();
+        self.go(Next::Locked);
+        self.shared.toast(reason);
+    }
+}
+
+fn initial_screen(vault_path: &std::path::Path) -> Screen {
+    if vault_path.exists() {
+        Screen::Locked(Default::default())
+    } else {
+        Screen::Setup(Default::default())
+    }
+}
+
+impl eframe::App for App {
+    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        self.frame(ctx);
+    }
 }
 
 impl Shared {
@@ -140,6 +156,12 @@ impl Shared {
 
     pub fn error(&mut self, text: impl Into<String>) {
         self.toast = Some(Toast { text: text.into(), error: true, until: Instant::now() + Duration::from_secs(8) });
+    }
+
+    /// Time until auto-lock fires, or `None` when auto-lock is off.
+    pub fn auto_lock_remaining(&self) -> Option<Duration> {
+        let limit = self.settings.auto_lock_secs;
+        (limit > 0).then(|| Duration::from_secs(limit).saturating_sub(self.last_activity.elapsed()))
     }
 
     pub fn save_settings(&mut self) {
