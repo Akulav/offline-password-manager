@@ -1,0 +1,71 @@
+[package]
+name = "seepass"
+version = "8.0.0"
+edition = "2021"
+description = "SeePass - an offline, single-file, authenticated-encryption password manager"
+license-file = "LICENSE"
+repository = "https://github.com/Akulav/OfflinePasswordManager"
+readme = "README.md"
+publish = false
+
+[[bin]]
+name = "seepass"
+path = "src/main.rs"
+
+[lib]
+name = "seepass"
+path = "src/lib.rs"
+
+[features]
+default = ["legacy-import"]
+# Import vaults created by SeePass 7.x (C# / SQLite). Pulls in a bundled SQLite.
+legacy-import = ["dep:rusqlite", "dep:aes", "dep:cbc", "dep:pbkdf2", "dep:sha1", "dep:encoding_rs", "dep:zip"]
+
+[dependencies]
+# Vault crypto
+argon2 = "0.5"
+chacha20poly1305 = "0.10"
+rand = "0.8"
+zeroize = { version = "1", features = ["derive"] }
+sha2 = "0.10"
+hmac = "0.12"
+
+# Data
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+base64 = "0.22"
+thiserror = "2"
+directories = "5"
+zxcvbn = "3"
+
+# Legacy (7.x) import
+rusqlite = { version = "0.32", features = ["bundled"], optional = true }
+aes = { version = "0.8", optional = true }
+cbc = { version = "0.1", optional = true }
+pbkdf2 = { version = "0.12", optional = true }
+sha1 = { version = "0.10", optional = true }
+encoding_rs = { version = "0.8", optional = true }
+zip = { version = "2", default-features = false, features = ["deflate"], optional = true }
+
+# Desktop UI
+eframe = "0.31"
+rfd = "0.15"
+arboard = "3"
+
+[dev-dependencies]
+tempfile = "3"
+
+[build-dependencies]
+winresource = "0.1"
+
+[profile.release]
+lto = true
+codegen-units = 1
+strip = true
+panic = "abort"
+
+# Argon2 is painfully slow unoptimised; keep tests usable.
+[profile.dev.package.argon2]
+opt-level = 3
+[profile.dev.package.blake2]
+opt-level = 3
