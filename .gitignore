@@ -33,3 +33,5 @@ legacy/**/.vs/
 legacy/**/packages/
 legacy/**/*.user
 legacy/**/*.suo
+# graphify knowledge graph (local, rebuilt with `graphify update .`)
+graphify-out/
