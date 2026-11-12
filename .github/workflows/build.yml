@@ -106,7 +106,7 @@ jobs:
           & $iscc "/DAppVersion=${{ needs.meta.outputs.version }}" "/DSourceExe=$PWD\target\release\seepass.exe" installer\seepass.iss
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           Copy-Item dist\SeePass-setup.exe .
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: SeePass-setup.exe
           path: SeePass-setup.exe
@@ -133,7 +133,7 @@ jobs:
           cargo build --locked --release
           cp target/release/seepass SeePass-linux-x64
           chmod +x SeePass-linux-x64
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: SeePass-linux-x64
           path: SeePass-linux-x64
@@ -157,7 +157,7 @@ jobs:
           cp target/aarch64-apple-darwin/release/seepass SeePass-macos-arm64
           chmod +x SeePass-macos-arm64
           codesign --force -s - SeePass-macos-arm64
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: SeePass-macos-arm64
           path: SeePass-macos-arm64
