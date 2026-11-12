@@ -64,7 +64,7 @@ encoding_rs = { version = "0.8", optional = true }
 zip = { version = "2", default-features = false, features = ["deflate"], optional = true }
 
 # Desktop UI
-eframe = "0.31"
+eframe = "0.37"
 rfd = "0.15"
 arboard = "3"
 
