@@ -26,25 +26,23 @@ keep reading older formats.
    add a fresh empty `## [Unreleased]` above it, and update the links at the bottom.
 3. Commit and push to `main`.
 
-That's it: no tag needed. On every push to `main`,
-[`.github/workflows/release.yml`](../.github/workflows/release.yml):
+That's it: no tag needed. On every push to `main` (and every PR),
+[`.github/workflows/build.yml`](../.github/workflows/build.yml) (the same logic as the other Akulav apps):
 
-1. **Checks** whether a GitHub release already exists for the `Cargo.toml`
-   version (as `vX.Y.Z` or `X.Y.Z`). If it does, it stops; ordinary commits
-   don't produce releases.
-2. **Builds** release binaries on Windows x64, Linux x64 (Ubuntu 22.04, so
-   glibc 2.35+) and macOS arm64. Tests run in CI, not here.
-3. **Packages** them: Windows as a `.zip` and a bare `.exe`; Linux as a `.deb`
-   (with desktop entry and icon) and a `.tar.gz`; macOS as a `.tar.gz`.
-4. **Publishes** a GitHub Release named "SeePass X.Y.Z", creating the tag
-   `vX.Y.Z` on that commit. Its notes are that version's changelog section plus
-   a downloads table, and it attaches every package plus `SHA256SUMS.txt`.
+1. **Checks** formatting, clippy `-D warnings` and a build without default features, and **tests and
+   builds** on Windows x64, Linux x64 (Ubuntu 22.04, so glibc 2.35+) and macOS arm64.
+2. **Decides** whether a GitHub release already exists for the `Cargo.toml` version (as `vX.Y.Z` or
+   `X.Y.Z`). If it does, it stops there; ordinary commits don't produce releases.
+3. **Packages exactly one file per system**, the same file for installing and updating:
+   `SeePass-setup.exe` (Inno Setup, `installer/seepass.iss`), `SeePass-linux-x64` and `SeePass-macos-arm64`
+   (the binaries; they install themselves into a folder the user picks), plus `SHA256SUMS.txt`.
+4. **Publishes** a GitHub Release named "SeePass vX.Y.Z", creating the tag `vX.Y.Z` on that commit. Its
+   notes are that version's changelog section plus a downloads table.
 
 Pushing a tag by hand (`vX.Y.Z` or `X.Y.Z`) also works; it must match `Cargo.toml`.
 
-To rebuild a version (say, after fixing the workflow), use
-**Actions → Release → Run workflow**. Leave the tag empty for the current
-`Cargo.toml` version, or enter an existing tag. The release's files are replaced.
+SeePass never touches the network, so installed copies don't look for updates: running a newer setup or
+binary updates the installed copy in its folder.
 
 If nothing shows up under Releases, check **Settings → Actions → General →
 Workflow permissions**: the workflow asks for `contents: write`, which an
@@ -52,14 +50,11 @@ organization or repository policy can block.
 
 ## Other automation
 
-- **CI** ([`ci.yml`](../.github/workflows/ci.yml)) runs on every push to `main`
-  and every PR: rustfmt, clippy `-D warnings` and tests on all three OSes, plus a
-  build without default features.
 - **Dependabot** opens weekly PRs for Cargo dependencies (minor and patch
   updates grouped into one) and for GitHub Actions versions.
 
 ## Code signing (not yet)
 
 Releases are unsigned, so SmartScreen and Gatekeeper warn on first run. Signing
-needs a certificate stored as repository secrets. Add a signing step between
-**Build** and **Package** in `release.yml` once one is available.
+needs a certificate stored as repository secrets. Add a signing step to the
+build jobs in `build.yml` once one is available.

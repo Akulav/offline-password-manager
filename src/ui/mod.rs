@@ -2,6 +2,7 @@
 
 mod clipboard;
 mod dialogs;
+mod install_prompt;
 mod lock;
 mod task;
 #[cfg(test)]
@@ -21,6 +22,8 @@ use clipboard::ClipboardGuard;
 pub struct App {
     shared: Shared,
     screen: Screen,
+    /// Linux/macOS, started outside the install folder: install / update / just run it.
+    install: Option<install_prompt::InstallPrompt>,
 }
 
 /// State that outlives any one screen.
@@ -54,8 +57,17 @@ pub enum Next {
 }
 
 impl App {
-    pub fn new(cc: &eframe::CreationContext<'_>, vault_override: Option<PathBuf>) -> Self {
-        Self::with_paths(&cc.egui_ctx, AppPaths::discover(), vault_override)
+    pub fn new(
+        cc: &eframe::CreationContext<'_>,
+        vault_override: Option<PathBuf>,
+        startup: seepass::install::StartupInfo,
+    ) -> Self {
+        let mut app = Self::with_paths(&cc.egui_ctx, AppPaths::discover(), vault_override);
+        app.install = install_prompt::InstallPrompt::new(startup.offer);
+        if startup.installed {
+            app.shared.toast("SeePass is installed");
+        }
+        app
     }
 
     /// Construct without eframe (used by the UI tests).
@@ -74,7 +86,7 @@ impl App {
             last_activity: Instant::now(),
         };
         widgets::apply_style(ctx, shared.settings.dark_mode);
-        Self { shared, screen }
+        Self { shared, screen, install: None }
     }
 
     /// One frame of the whole app.
@@ -147,6 +159,14 @@ fn initial_screen(vault_path: &std::path::Path) -> Screen {
 
 impl eframe::App for App {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        if let Some(prompt) = &mut self.install {
+            match prompt.show(ctx) {
+                install_prompt::PromptResult::Open => {}
+                install_prompt::PromptResult::Close => ctx.send_viewport_cmd(egui::ViewportCommand::Close),
+                install_prompt::PromptResult::JustRun => self.install = None,
+            }
+            return;
+        }
         self.frame(ctx);
     }
 }

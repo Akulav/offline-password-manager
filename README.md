@@ -1,139 +1,179 @@
-<p align="center"><img src="assets/seepass-256.png" width="112" alt="SeePass logo: an eye with a keyhole"></p>
+<div align="center">
 
-<h1 align="center">SeePass</h1>
+<img src="assets/seepass-256.png" alt="SeePass" width="128" height="128">
 
-<p align="center">
-<b>Your passwords, on your disk, under your key.</b><br>
-One portable executable, one encrypted file. No cloud, no accounts, no telemetry.
-</p>
+# SeePass
 
-<p align="center">
-<a href="https://github.com/Akulav/offline-password-manager/releases/latest"><img src="https://img.shields.io/github/v/release/Akulav/offline-password-manager?sort=semver&label=download&color=5458f0" alt="Latest release"></a>
-<a href="https://github.com/Akulav/offline-password-manager/actions/workflows/ci.yml"><img src="https://github.com/Akulav/offline-password-manager/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
-<img src="https://img.shields.io/badge/platforms-Windows%20%7C%20Linux%20%7C%20macOS-1eb8e6" alt="Windows, Linux, macOS">
-</p>
+**Your passwords, on your disk, under your key. Made by Akulav.**
 
-<p align="center">
-<a href="#install">Install</a> ·
-<a href="#features">Features</a> ·
-<a href="#using-seepass">Usage</a> ·
-<a href="docs/security.md">Security</a> ·
-<a href="CHANGELOG.md">Changelog</a>
-</p>
+No cloud. No accounts. No telemetry. It never touches the network. One file per system that installs and updates itself.
+
+[![Latest release](https://img.shields.io/github/v/release/Akulav/offline-password-manager?style=for-the-badge&label=release&color=e5383b)](https://github.com/Akulav/offline-password-manager/releases/latest)
+[![Downloads](https://img.shields.io/github/downloads/Akulav/offline-password-manager/total?style=for-the-badge&color=f4b740)](https://github.com/Akulav/offline-password-manager/releases)
+[![Build](https://img.shields.io/github/actions/workflow/status/Akulav/offline-password-manager/build.yml?branch=main&style=for-the-badge&label=build)](https://github.com/Akulav/offline-password-manager/actions/workflows/build.yml)
+
+![Windows](https://img.shields.io/badge/Windows-10%20%7C%2011-0078D6?style=flat-square&logo=windows&logoColor=white)
+![Linux](https://img.shields.io/badge/Linux-x64-FCC624?style=flat-square&logo=linux&logoColor=black)
+![macOS](https://img.shields.io/badge/macOS-Apple%20Silicon-000000?style=flat-square&logo=apple&logoColor=white)
+![Rust](https://img.shields.io/badge/made%20with-Rust-B7410E?style=flat-square&logo=rust&logoColor=white)
+![License](https://img.shields.io/badge/license-source--available-5c6270?style=flat-square)
+
+### [⬇ Download the latest release](https://github.com/Akulav/offline-password-manager/releases/latest)
+
+<img src="docs/screenshots/details-dark.png" width="49%" alt="Entry page, dark theme: reused-password warning, strength pill, copy buttons">
+<img src="docs/screenshots/details-light.png" width="49%" alt="Entry page, light theme">
+
+</div>
 
 ---
 
-<p align="center">
-<img src="docs/screenshots/details-dark.png" width="49%" alt="Entry page, dark theme: reused-password warning, strength pill, copy buttons">
-<img src="docs/screenshots/details-light.png" width="49%" alt="Entry page, light theme">
-</p>
+## ⬇️ Download
 
-SeePass keeps your logins in a single file on your own disk. The file is encrypted
-with a key derived from your master password, and the app never touches the
-network. Version 8 is a ground-up rewrite in Rust of the original C#/WinForms app.
-See [what changed](CHANGELOG.md#800---2026-11-03).
+One file per system. The same file installs SeePass the first time and updates it later: to update, just run the newer
+one.
 
-## Features
+| Platform | File | Notes |
+| :-- | :-- | :-- |
+| 🪟 **Windows 10 / 11** (x64) | [`SeePass-setup.exe`](https://github.com/Akulav/offline-password-manager/releases/latest/download/SeePass-setup.exe) | Asks where to install. No admin rights needed. |
+| 🐧 **Linux** (x64) | [`SeePass-linux-x64`](https://github.com/Akulav/offline-password-manager/releases/latest/download/SeePass-linux-x64) | glibc 2.35+ (Ubuntu 22.04 or newer), X11 or Wayland |
+| 🍎 **macOS** (Apple Silicon) | [`SeePass-macos-arm64`](https://github.com/Akulav/offline-password-manager/releases/latest/download/SeePass-macos-arm64) | macOS 12+ |
 
-- 🔐 **Strong, modern crypto.** Argon2id key derivation and XChaCha20-Poly1305
-  authenticated encryption. Every byte of the file, header included, is
-  tamper-evident. [Details](docs/security.md).
-- 🗂️ **Everything you'd expect.** Add, edit, search, sort and delete entries (title,
-  username, password, website, notes), with favorites pinned to the top and
-  10-second undo for deletes.
-- 🩺 **Password hygiene.** Warns when a password is reused across entries or hasn't
-  changed in over a year.
-- 🎲 **Password generator** with character classes, look-alike filtering and an
-  entropy readout, plus a zxcvbn **strength meter** with crack-time estimates.
-- 📋 **Safe clipboard.** Copied secrets are wiped after 20 s and kept out of
-  Windows clipboard history and cloud sync.
-- ⏱️ **Auto-lock** after inactivity. Locking wipes the decrypted data and key from memory.
-- 💾 **Backups.** Atomic saves, an automatic previous-version `.bak`, and encrypted
-  backup export/merge with a separate password.
-- ↪️ **Migrates from SeePass 7.** Imports the old `C:\PasswordManager` folder or its
-  `data.zip` export.
-- 🧳 **Portable.** No installer, no admin rights, no DLLs. Runs on Windows, Linux and macOS.
-- 🌗 Light and dark themes, full keyboard navigation, and screen-reader labels.
+Every release also ships `SHA256SUMS.txt` so you can verify your download (`sha256sum -c SHA256SUMS.txt --ignore-missing`).
 
-## Install
+## ✨ Features
 
-Download the latest build from the **[Releases page](https://github.com/Akulav/offline-password-manager/releases/latest)**:
+<table>
+<tr>
+<td width="50%" valign="top">
 
-| Platform | File |
-|---|---|
-| Windows 10/11 (x64) | `seepass-<version>-windows-x64.exe` (or the `.zip`) |
-| Debian / Ubuntu (x64) | `seepass-<version>-linux-x64.deb` |
-| Other Linux (x64, glibc 2.35+) | `seepass-<version>-linux-x64.tar.gz` |
-| macOS (Apple silicon) | `seepass-<version>-macos-arm64.tar.gz` |
+### 🔐 Strong, modern crypto
+- **Argon2id** key derivation and **XChaCha20-Poly1305** authenticated encryption.
+- Every byte of the file, header included, is tamper-evident. [Details](docs/security.md).
+- **Auto-lock** after inactivity; locking wipes the decrypted data and key from memory.
 
-On Debian/Ubuntu, install the package so SeePass shows up in your app menu:
+</td>
+<td width="50%" valign="top">
 
+### 🗂️ Everything you'd expect
+- Add, edit, search, sort and delete entries, favorites pinned to the top, 10-second undo for deletes.
+- **Password generator** with an entropy readout and a zxcvbn **strength meter**.
+- Warns about **reused** passwords and ones unchanged for over a year.
+
+</td>
+</tr>
+<tr>
+<td width="50%" valign="top">
+
+### 📋 Safe by default
+- Copied secrets are wiped after 20 s and kept out of Windows clipboard history and cloud sync.
+- **Backups:** atomic saves, an automatic previous-version `.bak`, and encrypted backup export / merge.
+- Imports SeePass 7 vaults (`C:\PasswordManager` or its `data.zip`).
+
+</td>
+<td width="50%" valign="top">
+
+### 📁 One folder, yours
+- **You choose the install folder** once; SeePass and your encrypted vault live there.
+- A newer download updates the installed copy in place, in the same folder.
+- A single native Rust binary. Light and dark themes, full keyboard navigation.
+
+</td>
+</tr>
+</table>
+
+## 🚀 Getting started
+
+### Windows
+1. Download **`SeePass-setup.exe`** and run it.
+2. Pick the install folder (default `%LOCALAPPDATA%\Programs\SeePass`, any folder you can write to works,
+   e.g. `D:\Apps\SeePass`). It adds Start-menu and (optional) Desktop shortcuts and an entry in *Settings → Apps*.
+3. To update, run a newer `SeePass-setup.exe`: it installs into the same folder without asking.
+
+Uninstall from *Settings → Apps*. The uninstaller asks whether to delete your vault (default: keep it).
+
+### Linux
 ```bash
-sudo apt install ./seepass-*-linux-x64.deb
+chmod +x SeePass-linux-x64
+./SeePass-linux-x64
 ```
+It asks for an install folder (default `~/.local/share/SeePass`), copies itself there and adds an app-menu entry with
+icon and a `seepass` terminal command. *Just run it* skips installing. Running a newer download later offers to update
+the installed copy in its folder. Uninstall with `seepass --uninstall`.
 
-Each release ships a `SHA256SUMS.txt`. Check your download against it:
-
-```powershell
-Get-FileHash .\seepass-8.1.0-windows-x64.exe
-```
-
+### macOS (Apple Silicon)
 ```bash
-sha256sum -c SHA256SUMS.txt --ignore-missing
+chmod +x SeePass-macos-arm64
+xattr -d com.apple.quarantine SeePass-macos-arm64
+./SeePass-macos-arm64
 ```
+It asks for an install folder (default `~/Applications/SeePass`) and creates `SeePass.app` there.
 
-The binaries are not code-signed yet, so Windows SmartScreen and macOS Gatekeeper
-will warn on first launch. On macOS, right-click the app and choose **Open**.
+> 💡 Want it portable, e.g. on a USB stick? Put an empty `portable.txt` next to the program (or start it with
+> `--portable`): it then keeps the vault next to itself and never offers to install.
 
-## Using SeePass
-
-<p align="center">
-<img src="docs/screenshots/lock.png" width="60%" alt="Unlock screen">
-</p>
-
-1. **First launch:** choose a master password. It cannot be recovered, so
-   write it down somewhere safe. SeePass refuses easily guessed passwords.
+### Using SeePass
+1. **First launch:** choose a master password. It cannot be recovered, so write it down somewhere safe.
 2. **Add entries** with **New** (Ctrl+N). The 🎲 button fills in a generated password.
 3. **Copy** a username or password from an entry's page. The clipboard clears itself.
-4. **Lock** (Ctrl+L) when you step away, or let auto-lock do it. The status bar
-   shows how long until it locks.
-
-### Keyboard shortcuts
+4. **Lock** (Ctrl+L) when you step away, or let auto-lock do it.
 
 | Keys | Action | | Keys | Action |
-|---|---|---|---|---|
+| :-- | :-- | :-- | :-- | :-- |
 | Ctrl+N | New entry | | Ctrl+C | Copy password of selected entry |
 | Ctrl+F | Search (Esc clears) | | Ctrl+B | Copy username |
 | ↑ / ↓ | Move through the list | | S | Toggle favorite |
 | E or Enter | Edit selected entry | | Del | Delete (with undo) |
 | Ctrl+S | Save while editing | | Ctrl+L | Lock |
 
-<p align="center">
-<img src="docs/screenshots/editor.png" width="49%" alt="Editor with strength meter and reuse warning">
-<img src="docs/screenshots/generator.png" width="49%" alt="Password generator">
-</p>
+**Coming from SeePass 7?** Create your new vault, then **Settings → Import from SeePass 7**. The old files are only
+read, never modified. See [docs/migrating-from-7.md](docs/migrating-from-7.md).
 
-Your vault lives at:
+## 📁 Where your data lives
 
-| OS | Location |
-|---|---|
-| Windows | `%APPDATA%\SeePass\data\vault.seepass` |
-| macOS | `~/Library/Application Support/SeePass/vault.seepass` |
-| Linux | `~/.local/share/seepass/vault.seepass` |
+**In the install folder you chose**, next to the program. Nothing goes to `%APPDATA%`, `~/.local/share` or
+`~/Library/Application Support`. The folder is remembered (Windows: by the setup; Linux/macOS: in
+`~/.config/seepass/install-dir` or `~/Library/Application Support/seepass/install-dir`), so updates keep everything in
+place. A vault from SeePass 8.0 / 8.1 (`%APPDATA%\SeePass\data`, `~/.local/share/seepass`, …) is moved in on the first
+start of the installed copy, also when the install folder is on another drive. (A copy that is *not* installed keeps
+opening that old vault until you install it.)
 
-Use `seepass --vault D:\path\to\other.seepass` to open a different file, or set
-`SEEPASS_HOME` to move everything (vault and settings) to one folder, e.g. a USB stick.
+| Path | Contents |
+| :-- | :-- |
+| `vault.seepass` | your encrypted vault |
+| `vault.seepass.bak` | the previous version of it |
+| `settings.json` | theme, auto-lock and clipboard settings (nothing secret) |
+| `.seepass-install` | marks the install folder (holds the installed version) |
 
-### Coming from SeePass 7
+`seepass --vault <file>` opens a different vault; `SEEPASS_HOME=<folder>` moves the vault and settings to one folder.
 
-Create your new vault, then open **Settings → Import from SeePass 7**. Enter
-your old username, password and PIM. The old files are only read, never
-modified. See [docs/migrating-from-7.md](docs/migrating-from-7.md).
+## 🖥️ Command line
 
-## Building from source
+| Flag | Meaning |
+| :-- | :-- |
+| `[--vault] <file>` | Open a specific vault file |
+| `--here` | Run without offering to install (Linux/macOS) |
+| `--portable` | Keep the vault next to the program, never install |
+| `--uninstall` | Remove the installed app (Windows: starts the uninstaller) |
 
-You need a stable [Rust toolchain](https://rustup.rs). On Linux you also need the
-GTK/X11 development packages:
+<details>
+<summary><b>🛠️ For maintainers: releases and building</b></summary>
+
+### Publishing a release
+
+Releases are fully automated by [`.github/workflows/build.yml`](.github/workflows/build.yml):
+
+1. Bump `version` in `Cargo.toml` and add its section to [`CHANGELOG.md`](CHANGELOG.md).
+2. Push to `main`.
+3. If no release with that version exists, CI checks formatting and Clippy, tests and builds all three systems, tags
+   the commit `vX.Y.Z` and publishes a GitHub release with exactly three programs, `SeePass-setup.exe`,
+   `SeePass-linux-x64` and `SeePass-macos-arm64`, plus `SHA256SUMS.txt`. The notes come from the changelog.
+
+SeePass never checks for updates by itself (it never touches the network): running a newer setup or binary updates the
+installed copy in its folder. See [docs/releasing.md](docs/releasing.md).
+
+### Building from source
+
+You need a stable [Rust toolchain](https://rustup.rs). On Linux also the GTK/X11 development packages:
 
 ```bash
 sudo apt-get install libgtk-3-dev libxcb-render0-dev libxcb-shape0-dev libxcb-xfixes0-dev libxkbcommon-dev libssl-dev
@@ -141,48 +181,46 @@ sudo apt-get install libgtk-3-dev libxcb-render0-dev libxcb-shape0-dev libxcb-xf
 
 ```bash
 cargo run --release
+cargo test
 ```
 
+The Windows setup needs [Inno Setup 6](https://jrsoftware.org/isinfo.php):
+
 ```bash
-cargo test
+iscc /DAppVersion=8.2.0 /DSourceExe=%CD%\target\release\seepass.exe installer\seepass.iss
 ```
 
 To try the UI with fake data and leave your real vault alone:
 
 ```bash
 SEEPASS_HOME=./demo cargo run --example demo_vault
-```
-
-```bash
 SEEPASS_HOME=./demo SEEPASS_DEV_PASSWORD=demo-vault-correct-horse-battery cargo run
 ```
 
-(`SEEPASS_DEV_PASSWORD` auto-unlocks **debug builds only**. Release builds don't contain that code.)
+(`SEEPASS_DEV_PASSWORD` auto-unlocks **debug builds only**.) Screenshots come from the headless UI tests:
+`SEEPASS_UI_SNAPSHOTS=target/ui cargo test --bin seepass -- --test-threads=1`. `cargo build --no-default-features`
+leaves out the SeePass 7 importer and its bundled SQLite. Debug builds never offer to install themselves.
 
-To regenerate the screenshots above from the headless UI tests:
+### Documentation
 
-```bash
-SEEPASS_UI_SNAPSHOTS=target/ui cargo test --bin seepass -- --test-threads=1
-```
-
-`cargo build --no-default-features` leaves out the SeePass 7 importer and its
-bundled SQLite.
-
-## Releases
-
-Bump `version` in `Cargo.toml`, add a matching `CHANGELOG.md` section and push to
-`main`. GitHub Actions builds Windows, Linux (`.deb` + `.tar.gz`) and macOS
-packages and publishes the release automatically. See [docs/releasing.md](docs/releasing.md).
-
-## Documentation
-
-- [Security design & threat model](docs/security.md): file format, what SeePass does and doesn't protect against
-- [Architecture](docs/architecture.md): code layout and how the pieces fit
-- [Releasing](docs/releasing.md): versioning and how a version bump becomes a GitHub release
+- [Security design & threat model](docs/security.md)
+- [Architecture](docs/architecture.md)
+- [Releasing](docs/releasing.md)
 - [Migrating from SeePass 7](docs/migrating-from-7.md)
-- [Changelog](CHANGELOG.md)
 
-## License
+</details>
 
-Source-available under the [Akulav Source-Available License](LICENSE). The SeePass
+## 🙏 Credits
+
+Built with [egui](https://github.com/emilk/egui), RustCrypto's Argon2 and ChaCha20-Poly1305, and zxcvbn. The SeePass
 name and icon are part of the project.
+
+---
+
+<div align="center">
+
+**Made with ❤️ by [Akulav](https://github.com/Akulav)**
+
+<sub>© 2026 Akulav. Source-available under the <a href="LICENSE">Akulav Source-Available License</a>.</sub>
+
+</div>

@@ -9,6 +9,12 @@ use std::sync::Arc;
 use eframe::egui;
 
 fn main() -> eframe::Result {
+    let args: Vec<String> = std::env::args().skip(1).collect();
+    // Install folder, moving a pre-8.2 vault into it, `--uninstall`.
+    let startup = match seepass::install::on_startup(&args) {
+        seepass::install::Startup::Exit => return Ok(()),
+        seepass::install::Startup::Run(info) => info,
+    };
     let vault_override = parse_args();
 
     let mut viewport = egui::ViewportBuilder::default()
@@ -24,7 +30,7 @@ fn main() -> eframe::Result {
     eframe::run_native(
         "SeePass",
         eframe::NativeOptions { viewport, centered: true, ..Default::default() },
-        Box::new(move |cc| Ok(Box::new(ui::App::new(cc, vault_override)))),
+        Box::new(move |cc| Ok(Box::new(ui::App::new(cc, vault_override, startup)))),
     )
 }
 
@@ -34,6 +40,9 @@ fn parse_args() -> Option<PathBuf> {
     while let Some(arg) = args.next() {
         if arg == "--vault" {
             return args.next().map(PathBuf::from);
+        }
+        if seepass::install::is_install_flag(&arg.to_string_lossy()) {
+            continue;
         }
         if !arg.to_string_lossy().starts_with('-') {
             return Some(PathBuf::from(arg));

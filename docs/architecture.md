@@ -12,7 +12,8 @@ src/
 ├── vault.rs        Vault (unlocked state), Entry, atomic save, .bak, backups, merge, destroy
 ├── generator.rs    CSPRNG password generator + entropy estimate
 ├── strength.rs     zxcvbn wrapper, master-password policy
-├── settings.rs     non-secret Settings (JSON) + per-OS AppPaths
+├── settings.rs     non-secret Settings (JSON) + AppPaths (in the install folder)
+├── install.rs      install folder, self-install (Linux/macOS), moving pre-8.2 vaults in
 ├── legacy.rs       SeePass 7.x importer (feature "legacy-import")
 ├── error.rs        Error enum (thiserror)
 ├── main.rs         window setup, CLI args

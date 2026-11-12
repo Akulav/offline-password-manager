@@ -159,7 +159,10 @@ fn read_rows(db: &[u8]) -> Result<Vec<Row>> {
 
 fn tempfile_path() -> PathBuf {
     use rand::RngCore;
-    std::env::temp_dir().join(format!("seepass-legacy-{:016x}.db", rand::rngs::OsRng.next_u64()))
+    // In SeePass's own folder (deleted right after reading), never the shared temp folder.
+    let dir = crate::install::data_root().unwrap_or_else(std::env::temp_dir);
+    let _ = fs::create_dir_all(&dir);
+    dir.join(format!(".seepass-legacy-{:016x}.db", rand::rngs::OsRng.next_u64()))
 }
 
 fn read_zip_entry(zip: &mut zip::ZipArchive<fs::File>, name: &str) -> Result<Vec<u8>> {

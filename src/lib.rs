@@ -9,6 +9,7 @@
 pub mod crypto;
 pub mod error;
 pub mod generator;
+pub mod install;
 #[cfg(feature = "legacy-import")]
 pub mod legacy;
 pub mod settings;

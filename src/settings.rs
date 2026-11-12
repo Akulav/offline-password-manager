@@ -4,7 +4,6 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use directories::ProjectDirs;
 use serde::{Deserialize, Serialize};
 
 use crate::vault::atomic_write;
@@ -37,12 +36,12 @@ impl Settings {
     }
 }
 
-/// Where SeePass keeps its files. Per-user, so no administrator rights are needed
-/// (7.x hard-coded `C:\PasswordManager\` and demanded admin to write there).
+/// Where SeePass keeps its files: **the folder it is installed in** (next to the program when not
+/// installed), never the OS's per-user app-data folders. See [`crate::install`].
 ///
-/// * Windows: `%APPDATA%\SeePass\`
-/// * macOS: `~/Library/Application Support/SeePass/`
-/// * Linux: `$XDG_DATA_HOME/seepass/` and `$XDG_CONFIG_HOME/seepass/`
+/// One exception keeps nobody's vault out of reach: a copy that is *not installed* and has no vault
+/// next to it keeps opening a vault from before 8.2 in the old per-user folder. Installing SeePass
+/// moves that vault into the install folder.
 #[derive(Clone, Debug)]
 pub struct AppPaths {
     pub default_vault: PathBuf,
@@ -51,15 +50,21 @@ pub struct AppPaths {
 
 impl AppPaths {
     pub fn discover() -> Self {
-        if let Ok(dir) = std::env::var("SEEPASS_HOME") {
-            let dir = PathBuf::from(dir);
-            return Self { default_vault: dir.join("vault.seepass"), settings: dir.join("settings.json") };
+        let root = crate::install::data_root();
+        if std::env::var_os(crate::install::ENV_DATA_DIR).is_none()
+            && !crate::install::running_installed()
+            && root.as_ref().is_none_or(|r| !r.join("vault.seepass").exists())
+        {
+            let legacy = crate::install::legacy_files();
+            let find = |name: &str| legacy.iter().find(|(_, n)| *n == name).map(|(p, _)| p.clone());
+            if let (Some(vault), Some(settings)) = (find("vault.seepass"), find("settings.json")) {
+                if vault.is_file() {
+                    return Self { default_vault: vault, settings };
+                }
+            }
         }
-        match ProjectDirs::from("", "", "SeePass") {
-            Some(d) => Self {
-                default_vault: d.data_dir().join("vault.seepass"),
-                settings: d.config_dir().join("settings.json"),
-            },
+        match root {
+            Some(r) => Self { default_vault: r.join("vault.seepass"), settings: r.join("settings.json") },
             None => Self { default_vault: "vault.seepass".into(), settings: "seepass-settings.json".into() },
         }
     }

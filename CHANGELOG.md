@@ -7,6 +7,25 @@ section whose heading matches the `Cargo.toml` version as that release's notes.
 
 ## [Unreleased]
 
+## [8.2.0] - 2026-11-12
+
+### Added
+- **One file per system that installs and updates itself**, like the other Akulav apps: `SeePass-setup.exe`
+  (Windows), `SeePass-linux-x64` and `SeePass-macos-arm64`. Windows asks for the install folder once; Linux and
+  macOS offer to install themselves into a folder you pick (with an app-menu entry and `seepass` command, or
+  `SeePass.app`), or *Just run it*. To update, run the newer file: it installs into the same folder. SeePass still
+  never touches the network.
+- `--here`, `--portable` (or `portable.txt` next to the program) and `--uninstall`.
+
+### Changed
+- **Your vault and settings now live in the install folder**, not in `%APPDATA%`, `~/.local/share` or
+  `~/Library/Application Support`. An 8.0 / 8.1 vault (with its `.bak`) and settings are moved in on the first start
+  of the installed copy, also when the install folder is on another drive (copied, checked, then removed).
+- The SeePass 7 importer works on its temporary copy in SeePass's own folder instead of the system temp folder.
+- One build workflow: every push is checked and built for all three systems. The `.zip`, bare `.exe`, `.tar.gz`
+  and `.deb` downloads are replaced by the three files above.
+- New README in the same style as the other Akulav apps.
+
 ## [8.1.0] - 2026-11-03
 
 A UI overhaul. Vaults stay compatible both ways: 8.0 opens 8.1 vaults and ignores the new fields.
